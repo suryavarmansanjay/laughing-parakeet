@@ -1,41 +1,64 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 load_dotenv()
+
 
 class GeminiDocumentGenerator:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
+
         if not api_key:
             raise ValueError("GEMINI_API_KEY is not configured.")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-pro")
+
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-2.5-flash"
 
     def generate_document(self, document_type, parties, terms, dates):
         prompt = f"""
 You are an AI assistant helping draft a legal document.
 
-Document type: {document_type}
-Parties: {parties}
-Terms and conditions: {terms}
-Relevant dates: {dates}
+Create a clear, structured draft for the following:
 
-Create a clear, structured legal-document draft with:
+Document type:
+{document_type}
+
+Parties:
+{parties}
+
+Terms and conditions:
+{terms}
+
+Relevant dates:
+{dates}
+
+Structure the document with appropriate sections such as:
+
 1. Title
 2. Parties
 3. Recitals/background where appropriate
 4. Definitions where appropriate
 5. Main clauses
-6. Responsibilities/obligations
-7. Payment or consideration terms if applicable
-8. Term and termination if applicable
-9. Dispute resolution if applicable
+6. Responsibilities and obligations
+7. Payment or consideration terms, if applicable
+8. Term and termination, if applicable
+9. Dispute resolution, if applicable
 10. Signature section
 
-Use placeholders where information is missing. Do not invent laws, court cases,
-registration numbers, or personal information. Add a brief notice that the output
-is an AI-generated draft requiring appropriate legal review.
+Important instructions:
+- Use placeholders where information is missing.
+- Do not invent laws, court cases, registration numbers, or personal information.
+- Write the document in clear and professional language.
+- This is an AI-generated draft and must be reviewed by a qualified legal professional before use.
 """
-        response = self.model.generate_content(prompt)
+
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+        )
+
+        if not response.text:
+            raise ValueError("Gemini returned an empty response.")
+
         return response.text
