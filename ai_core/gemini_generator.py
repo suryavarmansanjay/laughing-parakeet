@@ -1,4 +1,6 @@
 import os
+import time
+
 from dotenv import load_dotenv
 from google import genai
 
@@ -53,12 +55,24 @@ Important instructions:
 - This is an AI-generated draft and must be reviewed by a qualified legal professional before use.
 """
 
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt
-        )
+        last_error = None
 
-        if not response.text:
-            raise ValueError("Gemini returned an empty response.")
+        for attempt in range(4):
+            try:
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt
+                )
 
-        return response.text
+                if not response.text:
+                    raise ValueError("Gemini returned an empty response.")
+
+                return response.text
+
+            except Exception as exc:
+                last_error = exc
+
+                if attempt < 3:
+                    time.sleep(2 ** attempt)
+                else:
+                    raise last_error
